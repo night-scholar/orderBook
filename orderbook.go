@@ -18,6 +18,10 @@ type OrderBook struct {
 	handicap *Handicap
 }
 
+type Handicap struct {
+	BidsHandicap []*OrderQueue `json:"bids"`
+	AsksHandicap []*OrderQueue `json:"asks"`
+}
 func (ob *OrderBook) setHandicap()  {
 	var bidsHandicap []*OrderQueue
 	var asksHandicap []*OrderQueue
@@ -80,7 +84,7 @@ func NewOrderParam() *Param{
 	}
 }
 
-//对于限价单来说，挂单吃单都在done里面,done的类型[]*Order
+// NewHistoryDeal 对于限价单来说，挂单吃单都在done里面,done的类型[]*Order
 //历史成交需要数量，价格，时间，从done里取出数量及价格，存入数据结构，加上时间戳
 // 我的订单，时间，类型，买/卖，数量，价格，合计，挂单/吃单
 func NewHistoryDeal(side Side,price , amount decimal.Decimal,time string) *HistoryDeal{
@@ -114,7 +118,7 @@ type PriceLevel struct {
 	Quantity decimal.Decimal `json:"quantity"`
 }
 
-// 下市价单
+// ProcessMarketOrder 下市价单
 func (ob *OrderBook) ProcessMarketOrder(side Side,orderID , trader string , amount ,price decimal.Decimal,data,signature,perpetual,broker string) (orderParam *Param , done []*Order, partial *Order, partialQuantityProcessed, quantityLeft decimal.Decimal, err error) {
 	quantity := amount
 	if quantity.Sign() <= 0 {
@@ -183,15 +187,6 @@ func (ob *OrderBook) ProcessMarketOrder(side Side,orderID , trader string , amou
 			}
 			orderParam.MakerParam = append(orderParam.MakerParam , partialDone)
 		}
-		//添加历史订单
-		//dealPrice := decimal.Zero
-		//if ordersDone != nil{
-		//	dealPrice = ordersDone[0].price
-		//}else{
-		//	dealPrice = partialDone.price
-		//}
-		//ob.historyDeal = append(ob.historyDeal,NewHistoryDeal(side,dealPrice,quantity.Sub(quantityLeft),timeNow))
-
 		partial = partialDone
 		partialQuantityProcessed = partialProcessed
 		quantity = quantityLeft
@@ -210,7 +205,7 @@ func (ob *OrderBook) ProcessMarketOrder(side Side,orderID , trader string , amou
 	return
 }
 
-// 下限价单
+// ProcessLimitOrder 下限价单
 func (ob *OrderBook) ProcessLimitOrder( side Side, orderID string,trader string, quantity, price decimal.Decimal,data,signature,perpetual,broker string) (orderParam *Param,done []*Order, partial *Order, partialQuantityProcessed decimal.Decimal, err error) {
 	if _, ok := ob.orders[orderID]; ok {
 		return nil, nil, nil, decimal.Zero, ErrOrderExists
@@ -362,7 +357,6 @@ func (ob *OrderBook) processQueue(orderQueue *OrderQueue, quantityToTrade decima
 			done = append(done, ob.CancelOrder(headOrder.ID()))
 		}
 	}
-
 	return
 }
 
@@ -386,7 +380,7 @@ func (ob *OrderBook) processQueueForLimit(orderQueue *OrderQueue, quantityToTrad
 	return
 }
 
-// Order returns order by id
+// OrderByHash Order returns order by id
 func (ob *OrderBook) OrderByHash(orderID string) *Order {
 	e, ok := ob.orders[orderID]
 	if !ok {
@@ -405,15 +399,6 @@ func (ob *OrderBook) OrderByAddress(orderAddress string) []*Order {
 	}
 	return traderOrders
 }
-
-//func (ob *OrderBook) HistoryDeals() []HistoryDeal {
-//	var deals []HistoryDeal
-//	for _,v := range ob.historyDeal{
-//		deals = append(deals, v)
-//	}
-//	return  deals
-//}
-
 
 // Depth returns price levels and volume at price level
 func (ob *OrderBook) Depth() (asks, bids []*PriceLevel) {

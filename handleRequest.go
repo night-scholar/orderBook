@@ -9,7 +9,6 @@ import (
 )
 
 func HandleGet(orderBook *OrderBook,r *gin.Engine)  {
-	//获取指定ID的订单（订单哈希）
 	r.GET("/getOrder" , func(c *gin.Context) {
 		types := c.Query("type")
 		if types == "all"{
@@ -107,17 +106,6 @@ type OrderParam struct {
 	Signature string `json:"signature"`
 }
 
-func NewOrderParamToBot() OrderParam{
-	return OrderParam{
-		Trader:    "",
-		Amount:    "",
-		Price:     "",
-		Data:      "",
-		Signature: "",
-	}
-}
-
-
 func HandlePost(orderBook *OrderBook,r *gin.Engine){
 
 	//下限价卖单
@@ -165,10 +153,6 @@ func HandlePost(orderBook *OrderBook,r *gin.Engine){
 					"msg":"ok",
 					"data":param,
 				})
-				if param != nil{
-					SetOrderParam(param)
-				}
-
 			}else if side == "buy"{
 				param ,_ , _ ,_ ,_:=orderBook.ProcessLimitOrder(Buy,orderHash,trader,decimal.NewFromFloat(amount),decimal.NewFromFloat(price),data,signature,perpetual,broker)
 				c.JSON(http.StatusOK , gin.H{
@@ -176,9 +160,6 @@ func HandlePost(orderBook *OrderBook,r *gin.Engine){
 					"msg":"ok",
 					"data":param,
 				})
-				if param != nil{
-					SetOrderParam(param)
-				}
 			}else{
 				c.JSON(http.StatusOK , gin.H{
 					"code":http.StatusBadRequest,
@@ -196,9 +177,6 @@ func HandlePost(orderBook *OrderBook,r *gin.Engine){
 					"msg":"ok",
 					"data" :param,
 				})
-				if param != nil{
-					SetOrderParam(param)
-				}
 			}else if side == "buy"{
 				param ,_ , _ ,_,_,_:=orderBook.ProcessMarketOrder(Buy,orderHash,trader,decimal.NewFromFloat(amount),decimal.NewFromFloat(price),data,signature,perpetual,broker)
 				c.JSON(http.StatusOK , gin.H{
@@ -206,9 +184,6 @@ func HandlePost(orderBook *OrderBook,r *gin.Engine){
 					"msg":"ok",
 					"data":param,
 				})
-				if param != nil{
-					SetOrderParam(param)
-				}
 			}else{
 				c.JSON(http.StatusOK , gin.H{
 					"code":http.StatusBadRequest,
@@ -229,40 +204,4 @@ func HandlePost(orderBook *OrderBook,r *gin.Engine){
 			})
 		}
 	})
-}
-
-func SetOrderParam(param *Param ) {
-	takerOrderParam := NewOrderParamToBot()
-	makerOrderParams := make([]OrderParam,0)
-	takerOrderParam.Trader = param.TakerParam.trader
-	takerOrderParam.Amount = (param.TakerParam.quantity.Mul(decimal.New(1000000000000000000,0))).String()
-	takerOrderParam.Price = (param.TakerParam.price).Mul(decimal.New(1000000000000000000,0)).String()
-	takerOrderParam.Data = param.TakerParam.data
-	takerOrderParam.Signature = param.TakerParam.signature
-
-	for _ , v := range param.MakerParam{
-		makerOrderParam := NewOrderParamToBot()
-		makerOrderParam.Trader = v.trader
-		makerOrderParam.Amount = (v.quantity.Mul(decimal.New(1000000000000000000,0))).String()
-		makerOrderParam.Price = (v.price.Mul(decimal.New(1000000000000000000,0))).String()
-		makerOrderParam.Data = v.data
-		makerOrderParam.Signature = v.signature
-		makerOrderParams = append(makerOrderParams, makerOrderParam)
-	}
-	orderParamMsg := NewOrderParamMsg()
-	orderParamMsg.TakerOrderParam = takerOrderParam
-	orderParamMsg.MakerOrderParams = makerOrderParams
-	matchMsgChan <- orderParamMsg
-}
-
-type OrderParamMsg struct {
-	TakerOrderParam  OrderParam   `json:"takerOrderParam"`
-	MakerOrderParams []OrderParam `json:"makerOrderParams"`
-}
-
-func NewOrderParamMsg() OrderParamMsg{
-	return OrderParamMsg{
-		TakerOrderParam:  OrderParam{},
-		MakerOrderParams: nil,
-	}
 }
