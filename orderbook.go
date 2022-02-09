@@ -438,6 +438,17 @@ func (ob *OrderBook) CancelOrder(orderID string) *Order {
 	return ob.asks.Remove(e)
 }
 
+// IsOwner judge the order belong to trader
+func (ob *OrderBook)IsOwner(orderHash string,trader string) bool{
+	e,ok := ob.orders[orderHash]
+	if !ok{
+		return false
+	}
+	if e.Value.(*Order).trader != trader{
+		return false
+	}
+	return true
+}
 // CalculateMarketPrice returns total market price for requested quantity
 // if err is not nil price returns total price of all levels in side
 func (ob *OrderBook) CalculateMarketPrice(side Side, quantity decimal.Decimal) (price decimal.Decimal, err error) {

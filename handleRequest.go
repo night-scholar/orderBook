@@ -191,16 +191,24 @@ func HandlePost(orderBook *OrderBook,r *gin.Engine){
 				})
 			}
 		}else if types == "cancelOrder"{
-			orderBook.CancelOrder(orderHash)
-			c.JSON(http.StatusOK , gin.H{
-				"code":http.StatusOK,
-				"msg":"ok",
-				"data" : "cancelOrder successful",
-			})
+			if orderBook.IsOwner(orderHash,trader){
+				orderBook.CancelOrder(orderHash)
+				c.JSON(http.StatusOK , gin.H{
+					"code":http.StatusOK,
+					"msg":"ok",
+					"data" : "cancelOrder successful",
+				})
+			}else{
+				c.JSON(http.StatusOK , gin.H{
+					"code":http.StatusBadRequest,
+					"msg":"error",
+					"data" : "you are not owner",
+				})
+			}
 		}else{
 			c.JSON(http.StatusOK , gin.H{
 				"code":http.StatusBadRequest,
-				"msg":"type must be sellMarket , buyMarket , sellLimit , buyLimit , cancelOrder",
+				"msg":"type must be limit , market , cancelOrder",
 			})
 		}
 	})
